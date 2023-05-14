@@ -15,8 +15,8 @@ int ledPin = 3;
 
 //PID
 int targetPos = 0;  // target position
-double Kp = 0.4;    //try between 0 and 1
-double Ki = 0.00;   //try between 0.00 and 0.10
+double Kp = 0.6;    //try between 0 and 1
+double Ki = 0.02;   //try between 0.00 and 0.10
 double Kd = 6;      //try between 0 and 10
 
 //Kd parameters
@@ -26,7 +26,7 @@ int prevError = 0, vError;
 int errorAccumulatorMax = (int)(255 / Ki);
 int errorAccumulator = 0;
 unsigned long updatePeriod_I = 62L * 100L, updatePeriod_D = 62L * 1L, serialPrintPeriod = 62L * 100L;
-;  // clockrate scaling * ms
+ // clockrate scaling * ms
 unsigned long currentTime, lastUpdateTime_I = 0, lastUpdateTime_D = 0, lastUpdateTime_Print = 0;
 
 //Encoder Tracking
@@ -63,7 +63,7 @@ void loop() {
   int lastPos = handlePos;
   update_encoder_position_hapkit();
   //output encoder value to LED
-  int ledValue = map(handlePos, -3500, 3500, 0, 255);
+  int ledValue = map(handlePos, -3500, 3500, 255, 0);
   analogWrite(ledPin, ledValue);
 
 
@@ -81,14 +81,12 @@ void loop() {
   //Bang-bang here
 
   //int handlePos = 0;    //handle position
-  /* if(handlePos<0){
-    motorOutput = 200;
-  }
-  if(handlePos>10){
-    motorOutput = 0;
-  }*/
-
-
+  // if(handlePos<0){
+  //   motorOutput = 200;
+  // }
+  // else {
+  //   motorOutput = 0;
+  // }
 
 
   //P-control here
@@ -100,26 +98,28 @@ void loop() {
 
   currentTime = millis();
   if (currentTime - lastUpdateTime_I > updatePeriod_I) {
-    if ( errorAccumulatorMax > errorAccumulator) {
-      errorAccumulator += error;
-    }
+    errorAccumulator = max(-errorAccumulatorMax, min(errorAccumulatorMax, errorAccumulator + error));
+    lastUpdateTime_I = currentTime;
+    motorOutput += Ki * errorAccumulator;
   }
-  motorOutput += Ki * errorAccumulator;
+
 
 
   //D-control
   currentTime = millis();
   if (currentTime - lastUpdateTime_D > updatePeriod_D) {
-    //here
+    vError = error - prevError;
+    prevError = error;
+    lastUpdateTime_D = currentTime;
   }
-  //  if(abs(vError) > 3) // simple filter for small noise
-  //      motorOutput += ...;
+   if(abs(vError) > 3) // simple filter for small noise
+       motorOutput += vError * Kd;
 
   //debug print
   currentTime = millis();
   if (currentTime - lastUpdateTime_Print > serialPrintPeriod)  // executes every ~100ms
   {
-    //Serial.println(handlePos);
+    Serial.println(motorOutput);
     lastUpdateTime_Print = currentTime;
   }
 
