@@ -1,0 +1,31 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/node:14.16-stretch
+
+    steps:
+      - checkout
+      - run:
+          name: System information
+          command: |
+            echo "Node $(node -v)"
+            echo "Yarn v$(yarn --version)"
+      - run:
+          name: Installing dependecies
+          command: |
+            sudo apt-get update; sudo apt-get upgrade
+            sudo apt-get install build-essential libudev-dev zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev
+            wget https://www.python.org/ftp/python/3.8.0/Python-3.8.0.tgz
+            tar -xf Python-3.8.0.tgz
+            cd Python-3.8.0
+            ./configure
+            sudo make -j 8; sudo make install
+            cd ../
+            sudo pip3.8 install platformio
+      - run:
+          name: Run npm install
+          command: npm i
+      - run:
+          name: TestTest
+          command: npm run test
